@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace projeto_clientes.Models
 {
-    [Table("Contatos")]
+    [Table("Contatos")] 
     public class Contato
     {
         [Key]
