@@ -1,7 +1,8 @@
-using Moq;
+using Microsoft.EntityFrameworkCore;
 using projeto_clientes.Data;
 using projeto_clientes.Models;
 using projeto_clientes.Repositorio;
+using projeto_clientes.Validations;
 
 namespace TesteProjetoPessoas
 {
@@ -13,149 +14,321 @@ namespace TesteProjetoPessoas
             public void Test_Add_PessoaFisica()
             {
                 // Arrange
-                var mockContext = new Mock<dbContext>();
-                var repository = new PessoaFisicaRepositorio(mockContext.Object);
-                var pessoaFisica = new PessoaFisica
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_Add")
+                    .Options;
+
+                using (var context = new dbContext(options))
                 {
-                    CPF = "12345678900",
-                    NomeCompleto = "Fulano de Tal",
-                    DataDeNascimento = new DateTime(1990, 1, 1),
-                    Endereco = "Rua Teste, 123"
-                };
+                    var repository = new PessoaFisicaRepositorio(context);
+                    var pessoaFisica = new PessoaFisica
+                    {
+                        CPF = "12345678900",
+                        NomeCompleto = "Fulano de Tal",
+                        DataDeNascimento = new DateTime(1990, 1, 1),
+                        Endereco = "Rua Teste, 123",
+                        // Contatos não fornecidos
+                    };
 
-                // Act
-                repository.Add(pessoaFisica);
+                    // Act & Assert
+                    var exception = Assert.Throws<ArgumentException>(() => repository.Add(pessoaFisica));
+                    Assert.Equal("Contatos são obrigatórios.", exception.Message);
 
-                // Assert
-                mockContext.Verify(c => c.SaveChanges(), Times.Once);
-                mockContext.Verify(c => c.PessoasFisicas.Add(It.IsAny<PessoaFisica>()), Times.Once);
+                    // Verify that no entity was saved
+                    var savedPessoaFisica = context.PessoasFisicas.FirstOrDefault(p => p.CPF == "12345678900");
+                    Assert.Null(savedPessoaFisica);
+                }
             }
 
             [Fact]
             public void Test_Update_PessoaFisica_Existing()
             {
                 // Arrange
-                var mockContext = new Mock<dbContext>();
-                var repository = new PessoaFisicaRepositorio(mockContext.Object);
-                var pessoaFisica = new PessoaFisica
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_Update")
+                    .Options;
+
+                using (var context = new dbContext(options))
                 {
-                    CPF = "12345678900",
-                    NomeCompleto = "Novo Nome",
-                    DataDeNascimento = new DateTime(1990, 1, 1),
-                    Endereco = "Nova Rua, 456"
-                };
+                    var repository = new PessoaFisicaRepositorio(context);
 
-                mockContext.Setup(c => c.PessoasFisicas.FirstOrDefault(p => p.CPF == pessoaFisica.CPF))
-                           .Returns(new PessoaFisica { CPF = pessoaFisica.CPF });
+                    var pessoaFisicaInicial = new PessoaFisica
+                    {
+                        CPF = "12345678900",
+                        NomeCompleto = "Fulano de Tal",
+                        DataDeNascimento = new DateTime(1990, 1, 1),
+                        Endereco = "Rua Teste, 123",
+                        Contatos = new List<Contato>
+                {
+                    new Contato { Email = "novonome@example.com", Telefone = "987654321" }
+                }
+                    };
 
-                // Act
-                repository.Update(pessoaFisica, pessoaFisica.CPF);
+                    context.PessoasFisicas.Add(pessoaFisicaInicial);
+                    context.SaveChanges();
 
-                // Assert
-                mockContext.Verify(c => c.SaveChanges(), Times.Once);
+                    var pessoaFisicaAtualizada = new PessoaFisica
+                    {
+                        CPF = "12345678900",
+                        NomeCompleto = "Novo Nome",
+                        DataDeNascimento = new DateTime(1990, 1, 1),
+                        Endereco = "Nova Rua, 456",
+                        Contatos = new List<Contato>
+                {
+                    new Contato { Email = "novonome@example.com", Telefone = "987654321" }
+                }
+                    };
+
+                    // Act
+                    repository.Update(pessoaFisicaAtualizada, pessoaFisicaAtualizada.CPF);
+
+                    // Assert
+                    var updatedPessoaFisica = context.PessoasFisicas.FirstOrDefault(p => p.CPF == "12345678900");
+                    Assert.NotNull(updatedPessoaFisica);
+                    Assert.Equal("Novo Nome", updatedPessoaFisica.NomeCompleto);
+                    Assert.Equal(new DateTime(1990, 1, 1), updatedPessoaFisica.DataDeNascimento);
+                    Assert.Equal("Nova Rua, 456", updatedPessoaFisica.Endereco);
+                    Assert.NotNull(updatedPessoaFisica.Contatos);
+                    Assert.Single(updatedPessoaFisica.Contatos); // Verifica se há um contato após a atualização
+                    Assert.Equal("novonome@example.com", updatedPessoaFisica.Contatos.First().Email);
+                    Assert.Equal("987654321", updatedPessoaFisica.Contatos.First().Telefone);
+                }
             }
 
             [Fact]
             public void Test_Update_PessoaFisica_NotFound()
             {
                 // Arrange
-                var mockContext = new Mock<dbContext>();
-                var repository = new PessoaFisicaRepositorio(mockContext.Object);
-                var pessoaFisica = new PessoaFisica
-                {
-                    CPF = "99999999999",
-                    NomeCompleto = "Novo Nome",
-                    DataDeNascimento = new DateTime(1990, 1, 1),
-                    Endereco = "Nova Rua, 456"
-                };
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_NotFound")
+                    .Options;
 
-                // Act & Assert
-                Assert.Throws<ArgumentException>(() => repository.Update(pessoaFisica, pessoaFisica.CPF));
+                using (var context = new dbContext(options))
+                {
+                    var repository = new PessoaFisicaRepositorio(context);
+
+                    var pessoaFisica = new PessoaFisica
+                    {
+                        CPF = "99999999999",
+                        NomeCompleto = "Novo Nome",
+                        DataDeNascimento = new DateTime(1990, 1, 1),
+                        Endereco = "Nova Rua, 456"
+                    };
+
+                    // Act & Assert
+                    Assert.Throws<ArgumentException>(() => repository.Update(pessoaFisica, pessoaFisica.CPF));
+                }
             }
 
             [Fact]
             public void Test_Delete_PessoaFisica_Existing()
             {
                 // Arrange
-                var mockContext = new Mock<dbContext>();
-                var repository = new PessoaFisicaRepositorio(mockContext.Object);
-                var cpfToDelete = "12345678900";
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_DeleteExisting")
+                    .Options;
 
-                mockContext.Setup(c => c.PessoasFisicas.FirstOrDefault(p => p.CPF == cpfToDelete))
-                           .Returns(new PessoaFisica { CPF = cpfToDelete });
+                using (var context = new dbContext(options))
+                {
+                    var repository = new PessoaFisicaRepositorio(context);
+                    var pessoaFisica = new PessoaFisica
+                    {
+                        CPF = "12345678900",
+                        NomeCompleto = "Fulano de Tal",
+                        DataDeNascimento = new DateTime(1990, 1, 1),
+                        Endereco = "Rua Teste, 123"
+                    };
 
-                // Act
-                repository.Delete(cpfToDelete);
+                    context.PessoasFisicas.Add(pessoaFisica);
+                    context.SaveChanges();
 
-                // Assert
-                mockContext.Verify(c => c.SaveChanges(), Times.Once);
+                    // Act
+                    repository.Delete(pessoaFisica.CPF);
+
+                    // Assert
+                    var deletedPessoaFisica = context.PessoasFisicas.FirstOrDefault(p => p.CPF == pessoaFisica.CPF);
+                    Assert.Null(deletedPessoaFisica);
+                }
             }
 
             [Fact]
             public void Test_Delete_PessoaFisica_NotFound()
             {
                 // Arrange
-                var mockContext = new Mock<dbContext>();
-                var repository = new PessoaFisicaRepositorio(mockContext.Object);
-                var cpfToDelete = "99999999999";
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_DeleteNotFound")
+                    .Options;
 
-                // Act & Assert
-                Assert.Throws<ArgumentException>(() => repository.Delete(cpfToDelete));
+                using (var context = new dbContext(options))
+                {
+                    var repository = new PessoaFisicaRepositorio(context);
+                    var cpfToDelete = "99999999999";
+
+                    // Act & Assert
+                    var exception = Assert.Throws<ArgumentException>(() => repository.Delete(cpfToDelete));
+                    Assert.Equal("Pessoa física não encontrada para o CPF especificado. (Parameter 'cpf')", exception.Message);
+                }
             }
 
             [Fact]
             public void Test_Get_PessoaFisica_ByCPF()
             {
                 // Arrange
-                var mockContext = new Mock<dbContext>();
-                var repository = new PessoaFisicaRepositorio(mockContext.Object);
-                var cpfToSearch = "12345678900";
-                var mockData = new List<PessoaFisica>
-            {
-                new PessoaFisica { CPF = cpfToSearch, NomeCompleto = "Teste", DataDeNascimento = DateTime.Now, Endereco = "Rua Teste" }
-            }.AsQueryable();
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_GetByCPF")
+                    .Options;
 
-                mockContext.Setup(c => c.PessoasFisicas).Returns((Microsoft.EntityFrameworkCore.DbSet<PessoaFisica>)MockDbSet(mockData));
+                using (var context = new dbContext(options))
+                {
+                    var repository = new PessoaFisicaRepositorio(context);
+                    var cpfToSearch = "12345678900";
 
-                // Act
-                var result = repository.Get(cpfToSearch);
+                    var mockData = new List<PessoaFisica>
+                {
+                    new PessoaFisica { CPF = cpfToSearch, NomeCompleto = "Teste", DataDeNascimento = DateTime.Now, Endereco = "Rua Teste" }
+                };
 
-                // Assert
-                Assert.NotNull(result);
-                Assert.Single(result);
-                Assert.Equal(cpfToSearch, result.First().CPF);
+                    context.PessoasFisicas.AddRange(mockData);
+                    context.SaveChanges();
+
+                    // Act
+                    var result = repository.Get(cpfToSearch);
+
+                    // Assert
+                    Assert.NotNull(result);
+                    Assert.Single(result);
+                    Assert.Equal(cpfToSearch, result.First().CPF);
+                }
             }
 
             [Fact]
             public void Test_Get_PessoaFisica_All()
             {
                 // Arrange
-                var mockContext = new Mock<dbContext>();
-                var repository = new PessoaFisicaRepositorio(mockContext.Object);
-                var mockData = new List<PessoaFisica>
-            {
-                new PessoaFisica { CPF = "11111111111", NomeCompleto = "Teste1", DataDeNascimento = DateTime.Now, Endereco = "Rua Teste1" },
-                new PessoaFisica { CPF = "22222222222", NomeCompleto = "Teste2", DataDeNascimento = DateTime.Now, Endereco = "Rua Teste2" }
-            }.AsQueryable();
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_GetAll")
+                    .Options;
 
-                mockContext.Setup(c => c.PessoasFisicas).Returns((Microsoft.EntityFrameworkCore.DbSet<PessoaFisica>)MockDbSet(mockData));
+                using (var context = new dbContext(options))
+                {
+                    var repository = new PessoaFisicaRepositorio(context);
 
-                // Act
-                var result = repository.Get(null);
+                    var mockData = new List<PessoaFisica>
+                {
+                    new PessoaFisica { CPF = "12345678900", NomeCompleto = "Teste 1", DataDeNascimento = DateTime.Now, Endereco = "Rua Teste 1" },
+                    new PessoaFisica { CPF = "09876543210", NomeCompleto = "Teste 2", DataDeNascimento = DateTime.Now, Endereco = "Rua Teste 2" }
+                };
 
-                // Assert
-                Assert.NotNull(result);
-                Assert.Equal(2, result.Count);
+                    context.PessoasFisicas.AddRange(mockData);
+                    context.SaveChanges();
+
+                    // Act
+                    var result = repository.Get(null);
+
+                    // Assert
+                    Assert.NotNull(result);
+                    Assert.Equal(2, result.Count);
+                }
             }
 
-            private static IQueryable<T> MockDbSet<T>(IEnumerable<T> data) where T : class
+            [Fact]
+            public void Test_Add_PessoaFisica_InvalidCPF()
             {
-                var mockSet = new Mock<IQueryable<T>>();
-                mockSet.As<IQueryable<T>>().Setup(m => m.Provider).Returns(data.AsQueryable().Provider);
-                mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(data.AsQueryable().Expression);
-                mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(data.AsQueryable().ElementType);
-                mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(data.GetEnumerator());
-                return mockSet.Object;
+                // Arrange
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_AddInvalidCPF")
+                    .Options;
+
+                using (var context = new dbContext(options))
+                {
+                    var repository = new PessoaFisicaRepositorio(context);
+                    var pessoaFisica = new PessoaFisica
+                    {
+                        CPF = "123", // CPF inválido
+                        NomeCompleto = "Teste",
+                        DataDeNascimento = new DateTime(1990, 1, 1),
+                        Endereco = "Rua Teste",
+                        Contatos = new List<Contato>()
+                {
+                    new Contato { Email = "email@teste.com", Telefone = "123456789" }
+                }
+                    };
+
+                    // Act & Assert
+                    var exception = Assert.Throws<ArgumentException>(() => repository.Add(pessoaFisica));
+                    Assert.Equal("CPF é obrigatório, deve ter 11 caracteres e ser um CPF válido.", exception.Message);
+                }
+            }
+
+            [Fact]
+            public void Test_Add_PessoaFisica_FutureDateOfBirth()
+            {
+                // Arrange
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_AddFutureDateOfBirth")
+                    .Options;
+
+                using (var context = new dbContext(options))
+                {
+                    var repository = new PessoaFisicaRepositorio(context);
+                    var pessoaFisica = new PessoaFisica
+                    {
+                        CPF = "12345678900",
+                        NomeCompleto = "Teste",
+                        DataDeNascimento = DateTime.Now.AddDays(1), // Data de nascimento no futuro
+                        Endereco = "Rua Teste",
+                        Contatos = new List<Contato>()
+                {
+                    new Contato { Email = "email@teste.com", Telefone = "123456789" }
+                }
+                    };
+
+                    // Act & Assert
+                    var exception = Assert.Throws<ArgumentException>(() => repository.Add(pessoaFisica));
+                    Assert.Equal("DataDeNascimento deve ser uma data válida e anterior à data atual.", exception.Message);
+                }
+            }
+
+            [Fact]
+            public void Test_Add_PessoaFisica_MissingRequiredFields()
+            {
+                // Arrange
+                var options = new DbContextOptionsBuilder<dbContext>()
+                    .UseInMemoryDatabase(databaseName: "TestDatabase_AddMissingRequiredFields")
+                    .Options;
+
+                using (var context = new dbContext(options))
+                {
+                    var repository = new PessoaFisicaRepositorio(context);
+                    var pessoaFisica = new PessoaFisica
+                    {
+                        CPF = "12345678900",
+                        // NomeCompleto não fornecido
+                        DataDeNascimento = new DateTime(1990, 1, 1),
+                        Endereco = "Rua Teste",
+                        Contatos = null // Contatos não fornecidos
+                    };
+
+                    // Act & Assert
+                    var exception = Assert.Throws<ArgumentException>(() => repository.Add(pessoaFisica));
+                    Assert.Equal("NomeCompleto é obrigatório e deve ter no máximo 200 caracteres.", exception.Message);
+                }
+            }
+
+            [Fact]
+            public void Test_Add_Contato_InvalidEmail()
+            {
+                // Arrange & Act & Assert
+                var exception = Assert.Throws<ArgumentException>(() => Validations.ValidateContato(new Contato { Email = "invalidemail", Telefone = "123456789" }));
+                Assert.Equal("Email é obrigatório e deve ser um email válido.", exception.Message);
+            }
+
+            [Fact]
+            public void Test_Add_Contato_MissingPhoneNumber()
+            {
+                // Arrange & Act & Assert
+                var exception = Assert.Throws<ArgumentException>(() => Validations.ValidateContato(new Contato { Email = "email@teste.com", Telefone = null }));
+                Assert.Equal("Telefone é obrigatório.", exception.Message);
             }
         }
     }

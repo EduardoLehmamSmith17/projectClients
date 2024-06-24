@@ -15,12 +15,15 @@ namespace projeto_clientes.Repositorio
 
         public void Add(PessoaJuridica pessoaJuridica)
         {
+            Validations.Validations.ValidatePessoaJuridica(pessoaJuridica);
             _context.PessoasJuridicas.Add(pessoaJuridica);
             _context.SaveChanges();
         }
 
         public void Update(PessoaJuridica pessoaJuridica, string cnpj)
         {
+            Validations.Validations.ValidatePessoaJuridica(pessoaJuridica);
+
             var pessoaExistente = _context.PessoasJuridicas.FirstOrDefault(p => p.CNPJ == cnpj);
             if (pessoaExistente != null)
             {
