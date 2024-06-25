@@ -27,29 +27,21 @@ namespace projeto_clientes.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("Id");
+                        .HasColumnName("IdContact");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("PessoaFisicaId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("PessoaJuridicaId")
-                        .HasColumnType("integer");
+                        .HasColumnType("text")
+                        .HasColumnName("Email");
 
                     b.Property<string>("Telefone")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("Telephone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PessoaFisicaId");
-
-                    b.HasIndex("PessoaJuridicaId");
 
                     b.ToTable("Contatos", (string)null);
                 });
@@ -66,18 +58,22 @@ namespace projeto_clientes.Migrations
                     b.Property<string>("CPF")
                         .IsRequired()
                         .HasMaxLength(11)
-                        .HasColumnType("character varying(11)");
+                        .HasColumnType("character varying(11)")
+                        .HasColumnName("CPF");
 
                     b.Property<DateTime?>("DataDeNascimento")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("DataDeNascimento");
 
                     b.Property<string>("Endereco")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("Endereço");
 
                     b.Property<string>("NomeCompleto")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("NomeCompleto");
 
                     b.HasKey("Id");
 
@@ -96,44 +92,27 @@ namespace projeto_clientes.Migrations
                     b.Property<string>("CNPJ")
                         .IsRequired()
                         .HasMaxLength(14)
-                        .HasColumnType("character varying(14)");
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("CNPJ");
 
                     b.Property<string>("Endereco")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("Endereço");
 
                     b.Property<string>("NomeFantasia")
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("NomeFantasia");
 
                     b.Property<string>("RazaoSocial")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("RazaoSocial");
 
                     b.HasKey("Id");
 
                     b.ToTable("PessoasJuridicas", (string)null);
-                });
-
-            modelBuilder.Entity("projeto_clientes.Models.Contato", b =>
-                {
-                    b.HasOne("projeto_clientes.Models.PessoaFisica", null)
-                        .WithMany("Contatos")
-                        .HasForeignKey("PessoaFisicaId");
-
-                    b.HasOne("projeto_clientes.Models.PessoaJuridica", null)
-                        .WithMany("Contatos")
-                        .HasForeignKey("PessoaJuridicaId");
-                });
-
-            modelBuilder.Entity("projeto_clientes.Models.PessoaFisica", b =>
-                {
-                    b.Navigation("Contatos");
-                });
-
-            modelBuilder.Entity("projeto_clientes.Models.PessoaJuridica", b =>
-                {
-                    b.Navigation("Contatos");
                 });
 #pragma warning restore 612, 618
         }

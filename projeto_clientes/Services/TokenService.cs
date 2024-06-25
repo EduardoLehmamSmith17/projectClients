@@ -15,7 +15,7 @@ namespace projeto_clientes.Services
             {
                 Subject = new System.Security.Claims.ClaimsIdentity(new Claim[]
                 {
-                    new Claim("pessoaFisicaId", pessoaFisica.Id.ToString()),
+                    new Claim("Id", pessoaFisica.Id.ToString()),
                 }),
                 Expires = DateTime.UtcNow.AddHours(2),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -38,7 +38,7 @@ namespace projeto_clientes.Services
             {
                 Subject = new System.Security.Claims.ClaimsIdentity(new Claim[]
                 {
-                    new Claim("pessoaJuridicaId", pessoaJuridica.Id.ToString()),
+                    new Claim("Id", pessoaJuridica.Id.ToString()),
                 }),
                 Expires = DateTime.UtcNow.AddHours(2),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

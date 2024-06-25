@@ -22,7 +22,7 @@ namespace projeto_clientes.Models
 
         public string? Endereco { get; set; }
 
-        [Required]
+        [NotMapped]
         public ICollection<Contato>? Contatos { get; set; } = new List<Contato>();
     }
 }

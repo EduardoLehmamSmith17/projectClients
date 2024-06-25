@@ -14,9 +14,5 @@ namespace projeto_clientes.Models
 
         [Required]
         public string? Telefone { get; set; }
-
-        public int? PessoaFisicaId { get; set; }
-
-        public int? PessoaJuridicaId { get; set; }
     }
 }

@@ -12,22 +12,15 @@ namespace projeto_clientes.Data.Mapeamento
 
             builder.HasKey(p => p.Id);
 
-            builder.Property(p => p.Id)
-                .HasColumnName("Id")
-                .UseIdentityColumn();
+            builder.Property(p => p.Id).HasColumnName("Id").UseIdentityColumn();
 
-            builder.Property(p => p.RazaoSocial)
-                .IsRequired()
-                .HasMaxLength(200);
+            builder.Property(p => p.RazaoSocial).IsRequired().HasColumnName("RazaoSocial").HasMaxLength(200);
 
-            builder.Property(p => p.CNPJ)
-                .IsRequired()
-                .HasMaxLength(14);
+            builder.Property(p => p.CNPJ).IsRequired().HasColumnName("CNPJ").HasMaxLength(14);
 
-            builder.Property(p => p.NomeFantasia)
-                .HasMaxLength(200);
+            builder.Property(p => p.NomeFantasia).HasColumnName("NomeFantasia").HasMaxLength(200);
 
-            builder.Property(p => p.Endereco);;
+            builder.Property(p => p.Endereco).HasColumnName("Endereço");
         }
     }
 }

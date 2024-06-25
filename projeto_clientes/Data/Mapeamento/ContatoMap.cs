@@ -12,19 +12,11 @@ namespace projeto_clientes.Data.Mapeamento
 
             builder.HasKey(c => c.Id);
 
-            builder.Property(c => c.Id)
-                .HasColumnName("Id")
-                .UseIdentityColumn();
+            builder.Property(c => c.Id).HasColumnName("IdContact").UseIdentityColumn();
 
-            builder.Property(c => c.Email)
-                .IsRequired();
+            builder.Property(c => c.Email).IsRequired().HasColumnName("Email");
 
-            builder.Property(c => c.Telefone)
-                .IsRequired();
-
-            builder.Property(c => c.PessoaFisicaId);
-
-            builder.Property(c => c.PessoaJuridicaId);
+            builder.Property(c => c.Telefone).IsRequired().HasColumnName("Telephone");
         }
     }
 }

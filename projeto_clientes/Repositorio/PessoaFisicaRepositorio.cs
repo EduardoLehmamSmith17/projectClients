@@ -27,9 +27,44 @@ namespace projeto_clientes.Repositorio
             var pessoaExistente = _context.PessoasFisicas.FirstOrDefault(p => p.CPF == cpf);
             if (pessoaExistente != null)
             {
-                pessoaExistente.NomeCompleto = pessoaFisica.NomeCompleto;
-                pessoaExistente.DataDeNascimento = pessoaFisica.DataDeNascimento;
-                pessoaExistente.Endereco = pessoaFisica.Endereco;
+                if (!string.IsNullOrEmpty(pessoaFisica.NomeCompleto))
+                {
+                    pessoaExistente.NomeCompleto = pessoaFisica.NomeCompleto;
+                }
+
+                if (pessoaFisica.DataDeNascimento.HasValue && pessoaFisica.DataDeNascimento.Value.TimeOfDay == TimeSpan.Zero)
+                {
+                    pessoaFisica.DataDeNascimento = pessoaExistente.DataDeNascimento;
+                }
+                else
+                {
+                    pessoaExistente.DataDeNascimento = pessoaFisica.DataDeNascimento;
+                }
+
+                if (pessoaFisica.Endereco != "teste")
+                {
+                    pessoaExistente.Endereco = pessoaFisica.Endereco;
+                }
+
+                if (pessoaFisica.Contatos != null && pessoaFisica.Contatos.Count > 0)
+                {
+                    foreach (var contato in pessoaFisica.Contatos)
+                    {
+                        var existingContato = pessoaExistente.Contatos!.FirstOrDefault(c => c.Id == contato.Id);
+                        if (existingContato != null)
+                        {
+                            if (contato.Email != "teste@teste.com")
+                                existingContato.Email = contato.Email;
+
+                            if (contato.Telefone != "00000000000")
+                                existingContato.Telefone = contato.Telefone;
+                        }
+                        else
+                        {
+                            pessoaExistente.Contatos!.Add(contato);
+                        }
+                    }
+                }
 
                 _context.SaveChanges();
             }
